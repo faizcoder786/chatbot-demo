@@ -102,10 +102,10 @@ async def chat(data: ChatRequest):
         return {
             "reply": """
 📞 Call Support:
-+91 2345659858
++91 9798912871
 
 💬 WhatsApp:
-https://wa.me/912345659858
+https://wa.me/+919798912871
 """
         }
 
