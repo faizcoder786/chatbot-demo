@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MyBooksFactory Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand: #1a56db;
+    --brand-dark: #1040b0;
+    --brand-light: #e8f0fe;
+    --surface: #ffffff;
+    --surface-2: #f5f7fa;
+    --surface-3: #eef1f6;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --border: rgba(0,0,0,0.08);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 4px 14px rgba(0,0,0,0.07);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --font: 'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: #f0f4f8;
+    min-height: 100vh;
+  }
+
+  /* ── FAB BUTTON ── */
+  #fab {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: var(--brand);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(26,86,219,0.4);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.2s;
+    z-index: 999;
+  }
+  #fab:hover { transform: scale(1.1); box-shadow: 0 6px 28px rgba(26,86,219,0.5); }
+  #fab.open { transform: rotate(45deg); }
+  #fab.open:hover { transform: rotate(45deg) scale(1.1); }
+
+  /* ── CHAT WINDOW ── */
+  #chatWindow {
+    position: fixed;
+    bottom: 104px;
+    right: 28px;
+    width: 360px;
+    max-height: 560px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(.34,1.4,.64,1);
+  }
+  #chatWindow.open { display: flex; }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ── HEADER ── */
+  .chat-header {
+    background: var(--brand);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
+  .header-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .header-avatar i { color: white; font-size: 20px; }
+  .header-text { flex: 1; }
+  .header-text .name { color: white; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .header-text .status {
+    color: rgba(255,255,255,0.75); font-size: 11.5px;
+    display: flex; align-items: center; gap: 5px; margin-top: 1px;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 0 2px rgba(74,222,128,0.3);
+    animation: pulse 2.2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 2px rgba(74,222,128,0.3); }
+    50%      { box-shadow: 0 0 0 4px rgba(74,222,128,0.15); }
+  }
+  .header-close {
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.7); font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%;
+    transition: background 0.15s, color 0.15s;
+  }
+  .header-close:hover { background: rgba(255,255,255,0.15); color: white; }
+
+  /* ── MESSAGES ── */
+  .messages {
+    flex: 1; overflow-y: auto; padding: 16px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+    scroll-behavior: smooth;
+  }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+
+  .msg-row { display: flex; align-items: flex-end; gap: 8px; }
+  .msg-row.user { flex-direction: row-reverse; }
+
+  .bot-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--brand-light);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-bottom: 2px;
+  }
+  .bot-icon i { color: var(--brand); font-size: 14px; }
+
+  .bubble {
+    max-width: 78%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    /* white-space: pre-line; */
+  }
+  .bubble.bot {
+    background: var(--surface-2);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.user {
+    background: var(--brand);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .bubble a { color: var(--brand); text-decoration: underline; }
+  .bubble.user a { color: rgba(255,255,255,0.9); }
+
+  .timestamp {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 6px 0 2px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── TYPING INDICATOR ── */
+  .typing-row { display: flex; align-items: flex-end; gap: 8px; }
+  .typing-bubble {
+    background: var(--surface-2);
+    border-radius: 16px; border-bottom-left-radius: 4px;
+    padding: 12px 16px;
+    display: flex; gap: 5px; align-items: center;
+  }
+  .typing-bubble span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-muted);
+    animation: typingBounce 1.3s infinite ease-in-out;
+  }
+  .typing-bubble span:nth-child(2) { animation-delay: 0.18s; }
+  .typing-bubble span:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes typingBounce {
+    0%,60%,100% { transform: translateY(0); opacity: 0.5; }
+    30%          { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* ── QUICK BUTTONS ── */
+  .quick-section {
+    padding: 8px 14px 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .quick-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    font-family: var(--font);
+    cursor: pointer;
+    color: var(--text-primary);
+    display: flex; align-items: center; gap: 7px;
+    transition: all 0.18s;
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+    text-align: left;
+  }
+  .quick-btn:hover {
+    background: var(--brand);
+    color: white;
+    border-color: var(--brand);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26,86,219,0.25);
+  }
+  .quick-btn i { font-size: 16px; flex-shrink: 0; }
+
+  /* ── INPUT AREA ── */
+  .input-area {
+    display: flex; gap: 8px;
+    padding: 10px 14px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1; height: 40px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0 16px;
+    font-size: 13.5px;
+    font-family: var(--font);
+    background: var(--surface-2);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+  .chat-input::placeholder { color: var(--text-muted); }
+  .chat-input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+    background: var(--surface);
+  }
+  .send-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--brand);
+    border: none; cursor: pointer;
+    color: white; font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.18s, background 0.18s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--brand-dark); transform: scale(1.08); }
+  .send-btn:active { transform: scale(0.95); }
+
+  /* ── SHIPMENT CARD ── */
+  .shipment-card { margin-top:4px; border-radius:12px; border:1px solid var(--border); overflow:hidden; font-size:13px; }
+  .shipment-banner { background:#f0fdf4; padding:7px 12px; display:flex; align-items:center; gap:7px; color:#15803d; font-weight:500; font-size:13px; }
+  .shipment-banner i { font-size:16px; }
+  .shipment-body { padding:6px 10px 8px; display:flex; flex-direction:column; gap:4px; background:var(--surface); }
+  .shipment-courier { display:flex; align-items:center; gap:8px; padding:2px 0 0; }
+  .courier-icon { width:26px; height:26px; border-radius:6px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .courier-icon i { font-size:13px; color:var(--text-secondary); }
+  .courier-label { font-size:10.5px; color:var(--text-secondary); margin-bottom:0px; }
+  .courier-name { font-size:13px; font-weight:500; color:var(--text-primary); }
+  .consignment-box { background:var(--surface-2); border-radius:8px; padding:5px 9px 4px; }
+  .consignment-label { font-size:10.5px; color:var(--text-secondary); margin-bottom:1px; }
+  .consignment-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .tracking-num { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; color:var(--text-primary); letter-spacing:0.04em; }
+  .copy-btn { flex-shrink:0; background:var(--surface); border:1px solid var(--border); color:var(--text-secondary); font-size:11px; font-family:var(--font); font-weight:500; cursor:pointer; padding:3px 8px; border-radius:5px; display:flex; align-items:center; gap:3px; transition:all 0.15s; white-space:nowrap; }
+  .copy-btn:hover { background:var(--brand); color:white; border-color:var(--brand); }
+  .track-link { display:flex; align-items:center; justify-content:center; gap:6px; background:var(--brand-light); border-radius:7px; padding:7px; text-decoration:none; color:var(--brand); font-size:12.5px; font-weight:500; transition:background 0.15s; }
+  .track-link:hover { background:var(--brand); color:white; }
+  .track-link i { font-size:14px; }
+
+  /* ── NOTIFICATION BADGE ── */
+  .fab-badge {
+    position: absolute;
+    top: -2px; right: -2px;
+    width: 18px; height: 18px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid white;
+    font-size: 10px;
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    animation: badgePop 0.3s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes badgePop {
+    from { transform: scale(0); }
+    to   { transform: scale(1); }
+  }
+
+  /* ── MSG ANIMATION ── */
+  .msg-row, .typing-row {
+    animation: msgIn 0.22s ease;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- FAB BUTTON -->
+<button id="fab" onclick="toggleChat()" aria-label="Open support chat">
+  <i class="ti ti-message-circle"></i>
+  <span class="fab-badge" id="badge">1</span>
+</button>
+
+<!-- CHAT WINDOW -->
+<div id="chatWindow">
+
+  <!-- HEADER -->
+  <div class="chat-header">
+    <div class="header-avatar">
+      <i class="ti ti-robot"></i>
+    </div>
+    <div class="header-text">
+      <div class="name">MyBooksFactory Support</div>
+      <div class="status">
+        <span class="status-dot"></span>
+        Online — replies instantly
+      </div>
+    </div>
+    <button class="header-close" onclick="toggleChat()" aria-label="Close chat">
+      <i class="ti ti-x"></i>
+    </button>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="messages" id="messages">
+    <div class="timestamp">Today · Just now</div>
+    <div class="msg-row">
+      <div class="bot-icon"><i class="ti ti-robot"></i></div>
+      <div class="bubble bot">Namaste! 👋 I can help you with your orders. What would you like to do?</div>
+    </div>
+  </div>
+
+  <!-- QUICK BUTTONS -->
+  <div class="quick-section" id="quickSection">
+    <button class="quick-btn" onclick="quickMsg('order_status', '📦 Order Status')">
+      <i class="ti ti-package"></i> Order status
+    </button>
+    <button class="quick-btn" onclick="quickMsg('track_shipment', '🚚 Track Shipment')">
+      <i class="ti ti-truck-delivery"></i> Track shipment
+    </button>
+    <button class="quick-btn" onclick="quickMsg('contact_support', '☎ Contact Support')">
+      <i class="ti ti-headset"></i> Contact support
+    </button>
+    <button class="quick-btn" onclick="quickMsg('cancel_order', '❌ Cancel Order')">
+      <i class="ti ti-circle-x"></i> Cancel order
+    </button>
+  </div>
+
+  <!-- INPUT -->
+  <div class="input-area">
+    <input
+      type="text"
+      class="chat-input"
+      id="msgInput"
+      placeholder="Type your order ID or message…"
+      onkeydown="if(event.key==='Enter') sendMessage()"
+    />
+    <button class="send-btn" onclick="sendMessage()" aria-label="Send">
+      <i class="ti ti-send"></i>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  // const API_URL = "http://127.0.0.1:8000/chat";
+  const API_URL = "/chat";
+  let currentMode = "";
+  let chatOpened = false;
+
+  function toggleChat() {
+    const win = document.getElementById("chatWindow");
+    const fab = document.getElementById("fab");
+    const badge = document.getElementById("badge");
+
+    chatOpened = !chatOpened;
+    win.classList.toggle("open", chatOpened);
+    fab.classList.toggle("open", chatOpened);
+
+    if (chatOpened && badge) {
+      badge.remove();
+    }
+  }
+
+  function addUserMsg(text) {
+    const msgs = document.getElementById("messages");
+    const row = document.createElement("div");
+    row.className = "msg-row user";
+    row.innerHTML = `<div class="bubble user">${escapeHtml(text)}</div>`;
+    msgs.appendChild(row);
+    scrollBottom();
+  }
+
+  function addBotMsg(html) {
+    const msgs = document.getElementById("messages");
+    const row = document.createElement("div");
+    row.className = "msg-row";
+    row.innerHTML = `
+      <div class="bot-icon"><i class="ti ti-robot"></i></div>
+      <div class="bubble bot">${html}</div>
+    `;
+    msgs.appendChild(row);
+    scrollBottom();
+  }
+
+  function showTyping() {
+    const msgs = document.getElementById("messages");
+    const row = document.createElement("div");
+    row.className = "typing-row";
+    row.id = "typingIndicator";
+    row.innerHTML = `
+      <div class="bot-icon"><i class="ti ti-robot"></i></div>
+      <div class="typing-bubble"><span></span><span></span><span></span></div>
+    `;
+    msgs.appendChild(row);
+    scrollBottom();
+  }
+
+  function removeTyping() {
+    const t = document.getElementById("typingIndicator");
+    if (t) t.remove();
+  }
+
+  function scrollBottom() {
+    const msgs = document.getElementById("messages");
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function formatReply(text) {
+    // Trim each line to remove backend indentation spaces
+    const cleaned = text.split('\n').map(l => l.trim()).join('\n');
+
+    // Parse shipment card from raw text BEFORE escaping
+    const shipMatch = cleaned.match(
+      /Your order has been shipped\.[\s\S]*?Courier:\s*(.+?)\n[\s\S]*?Consignment Number:\s*\n?([A-Z0-9]+)[\s\S]*?Track Package:\s*\n?(https?:\/\/[^\s]+)/i
+    );
+
+    if (shipMatch) {
+      const courier  = shipMatch[1].trim();
+      const trackNum = shipMatch[2].trim();
+      const trackUrl = shipMatch[3].trim();
+      const domain   = trackUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      return `<div class="shipment-card">
+  <div class="shipment-banner"><i class="ti ti-circle-check"></i> Your order has been shipped</div>
+  <div class="shipment-body">
+    <div class="shipment-courier">
+      <div class="courier-icon"><i class="ti ti-building-store"></i></div>
+      <div><div class="courier-label">Courier</div><div class="courier-name">${escapeHtml(courier)}</div></div>
+    </div>
+    <div class="consignment-box">
+      <div class="consignment-label">Consignment Number</div>
+      <div class="consignment-row">
+        <span class="tracking-num">${escapeHtml(trackNum)}</span>
+        <button class="copy-btn" onclick="copyTracking('${escapeHtml(trackNum)}', this)"><i class="ti ti-copy" style="font-size:13px"></i> Copy</button>
+      </div>
+    </div>
+    <a href="${trackUrl}" target="_blank" rel="noopener" class="track-link"><i class="ti ti-truck-delivery"></i> Track on ${escapeHtml(domain)} <i class="ti ti-arrow-right"></i></a>
+  </div>
+</div>`;
+    }
+
+    // Default: escape and linkify
+    let out = escapeHtml(cleaned);
+    out = out.replace(
+      /(https?:\/\/[^\s]+)/g,
+      '<a href="$1" target="_blank" rel="noopener">$1</a>'
+    );
+    return out;
+  }
+
+  function showQuickButtons() {
+    document.getElementById("quickSection").style.display = "grid";
+  }
+
+  function hideQuickButtons() {
+    document.getElementById("quickSection").style.display = "none";
+  }
+
+  async function quickMsg(mode, label) {
+    currentMode = mode;
+    hideQuickButtons();
+    addUserMsg(label);
+    showTyping();
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: mode, mode: currentMode })
+      });
+      const data = await res.json();
+      removeTyping();
+      addBotMsg(formatReply(data.reply));
+      // "Please enter your order ID" — buttons rehne chahiye hidden, user type kare
+      // Baaki sab cases mein buttons show karo
+      if (shouldShowButtons(data.reply)) {
+        currentMode = "";
+        showQuickButtons();
+      }
+    } catch (err) {
+      removeTyping();
+      addBotMsg("Sorry, couldn't connect to server. Please try again. 🔄");
+      currentMode = "";
+      showQuickButtons();
+    }
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById("msgInput");
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+
+    addUserMsg(text);
+    showTyping();
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text.toLowerCase(), mode: currentMode })
+      });
+      const data = await res.json();
+      removeTyping();
+      addBotMsg(formatReply(data.reply));
+
+      if (shouldShowButtons(data.reply)) {
+        currentMode = "";
+        showQuickButtons();
+      }
+    } catch (err) {
+      removeTyping();
+      addBotMsg("Network error. Please check your connection and try again. 🔄");
+      currentMode = "";
+      showQuickButtons();
+    }
+  }
+
+  function shouldShowButtons(reply) {
+    const cleaned = reply.split('\n').map(l => l.trim()).join('\n');
+    // Buttons tabhi show karo jab conversation complete ho — order ID maangne pe NAHI
+    const triggers = [
+      "your order", "sorry", "cancellation", "payment", "refunded",
+      "order not found", "call support", "already been cancelled",
+      "cancellation is no longer possible", "shipped", "processing",
+      "eligible", "unsuccessful", "select a valid option"
+    ];
+    // Agar bot order ID maang raha hai to buttons mat dikhao
+    const askingForId = cleaned.toLowerCase().includes("please enter your order id");
+    if (askingForId) return false;
+    return triggers.some(t => cleaned.toLowerCase().includes(t));
+  }
+
+  function copyTracking(number, btn) {
+    navigator.clipboard.writeText(number).then(() => {
+      btn.innerHTML = '<i class="ti ti-check" style="font-size:12px"></i> Copied';
+      btn.style.background = "#16a34a";
+      btn.style.color = "white";
+      btn.style.borderColor = "#16a34a";
+      setTimeout(() => {
+        btn.innerHTML = '<i class="ti ti-copy" style="font-size:12px"></i> Copy';
+        btn.style.background = "";
+        btn.style.color = "";
+        btn.style.borderColor = "";
+      }, 2000);
+    }).catch(() => {
+      // Fallback for older browsers
+      const el = document.createElement("textarea");
+      el.value = number;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      btn.textContent = "Copied ✓";
+      setTimeout(() => { btn.innerHTML = '<i class="ti ti-copy" style="font-size:12px"></i> Copy'; }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
